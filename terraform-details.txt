@@ -1,0 +1,114 @@
+VPC Peering :
+-------------
+Peering Connections --> Create Peering Connections --> Peering Connection Settings 
+Name : peering-connection-between-VPC-1-and-VPC-2
+Select a local VPC to peer with VPC ID ( Requester ): VPC-1
+Select another VPC to peer with VPC ID ( Accepter ): VPC-2
+
+Create Peering Connection
+
+Accepter Accept the Request
+
+Update the route tables from both VPC Side
+Route Table --> edit Route table -->
+Add Route --> other VPC CIDR Range (13.0.0.0/16) --> Peering Connection  --> Peering Connection ID 
+Save Changes
+
+ 
+
+Transit Gateway
+---------------
+
+Transit Gateway
+name : tg-vpc1-vpc2-vpc3
+
+Create
+Transit Gateway Attachment :
+Create Transit Gateway Attachment  --> 
+	Name : tg-attachment-vpc-1
+	Transit gateway ID : 
+	Attachment Type : VPC
+	VPC Attachment : VPC-1
+we need to create the Transit Gateway Attachment for VPC-2 and VPC-3 also	
+Update the Route Tables of all VPC :
+oper the Route Table of VPC-1 :
+edit Route --> Add Route  --> VPC-2 CIDR Block --> Transit Gateway --> Select Transit Gateway Attachment-1
+
+
+
+
+
+Meta - Arguments :
+------------------
+depends_on
+count
+for_each
+provider
+lifecycle
+
+
+
+terraform {
+	required_version = "~> 0.14.8"
+	required_providers
+	{
+		aws = {
+			source = "hashicorp/aws"
+			version = "~> 3.34.0"
+		}
+	}
+}
+
+
+
+
+# EC2 Instance
+resource "aws_instance" "myec2vm" {
+  ami = data.aws_ami.amzlinux2.id
+  instance_type = var.instance_type
+  user_data = file("${path.module}/app1-install.sh")
+  key_name = var.instance_keypair
+  vpc_security_group_ids = [ aws_security_group.vpc-ssh.id, aws_security_group.vpc-web.id   ]
+  tags = {
+    "Name" = "EC2 Demo 2"
+  }
+}
+
+#RDS Instance 
+resource "aws_db_instance" "myrds"{
+	engine = "mysql"
+	engine_version = "8.0.27"
+	allocated_storage = 20
+	instance_class = "db.t3.micro"
+	storage_type = "gp2"
+	identifier = "mydb"
+	username = "admin"
+	password = "passw0rd!123"
+	publicly_accessible = true
+}
+
+terraform {
+	required_providers {
+		aws = {
+			source = "hashicorp/aws"
+			version = "4.66.1"
+		}
+	}
+}
+
+provider "aws" {
+	region = "ap-southeast-1"
+}
+
+resource "aws_vpc" "eks-test-vpc" {
+	cidr_block = "12.0.0.0/16"
+	tags = {
+		Name = "eks-test-vpc"
+	}
+}
+
+
+
+aws eks --region ap-southeast-1 describe-cluster --name pc-eks --query cluster.status
+
+aws eks --region 	ap-southeast-1 update-kubeconfig --name pc-eks 
